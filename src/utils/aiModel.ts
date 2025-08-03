@@ -8,10 +8,10 @@ export interface DetectionResult {
   confidence: number
 }
 
-// Mapping des classes COCO vers des vêtements
-const clothingClasses = {
-  'person': 'Personne détectée',
-}
+// Mapping des classes COCO vers des vêtements (pour référence future)
+// const clothingClasses = {
+//   'person': 'Personne détectée',
+// }
 
 // Mapping basé sur les couleurs et formes pour détecter les t-shirts
 const detectTshirtFromPerson = (canvas: HTMLCanvasElement): DetectionResult | null => {
