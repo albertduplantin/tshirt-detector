@@ -16,8 +16,8 @@ const WebcamDetector = () => {
   const {
     isDetecting,
     setIsDetecting,
-    currentClothing,
-    setCurrentClothing,
+    currentDetection,
+    setCurrentDetection,
     addDetection,
     settings,
     lastDetectionTime,
@@ -95,28 +95,55 @@ const WebcamDetector = () => {
       const result = await detectClothing(canvas)
       
       if (result && result.confidence >= settings.confidenceThreshold) {
-        setCurrentClothing(result.clothing)
+        // Mettre à jour la détection actuelle
+        setCurrentDetection({
+          clothing: result.clothing,
+          glasses: result.glasses,
+          hairType: result.hairType,
+          hairColor: result.hairColor,
+          accessories: result.accessories,
+          facialHair: result.facialHair,
+          age: result.age,
+          gender: result.gender,
+        })
         setCurrentConfidence(result.confidence)
         
-        // Ajouter la détection au store
+        // Ajouter la détection complète au store
         const now = Date.now()
         if (!lastDetectionTime || now - lastDetectionTime > settings.detectionInterval) {
           addDetection({
             timestamp: now,
             clothing: result.clothing,
+            glasses: result.glasses,
+            hairType: result.hairType,
+            hairColor: result.hairColor,
+            accessories: result.accessories,
+            facialHair: result.facialHair,
+            age: result.age,
+            gender: result.gender,
             confidence: result.confidence,
+            details: result.details,
             image: settings.saveImages ? canvas.toDataURL() : undefined,
           })
           setLastDetectionTime(now)
         }
       } else {
-        setCurrentClothing(null)
+        setCurrentDetection({
+          clothing: null,
+          glasses: null,
+          hairType: null,
+          hairColor: null,
+          accessories: [],
+          facialHair: null,
+          age: null,
+          gender: null,
+        })
         setCurrentConfidence(0)
       }
     } catch (err) {
       console.error('Erreur détection:', err)
     }
-  }, [modelLoaded, settings, lastDetectionTime, addDetection, setCurrentClothing, setLastDetectionTime])
+  }, [modelLoaded, settings, lastDetectionTime, addDetection, setCurrentDetection, setLastDetectionTime])
 
   // Boucle de détection
   useEffect(() => {
@@ -158,7 +185,7 @@ const WebcamDetector = () => {
   }
 
   const getStatusIcon = () => {
-    if (currentClothing?.toLowerCase().includes('t-shirt')) {
+    if (currentDetection.clothing?.toLowerCase().includes('t-shirt')) {
       return <CheckCircle className="text-green-500" size={24} />
     }
     return <AlertCircle className="text-blue-500" size={24} />
@@ -169,15 +196,15 @@ const WebcamDetector = () => {
       {/* Header */}
       <div className="text-center">
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Détecteur de T-Shirts
+          Analyseur de Personne IA
         </h2>
         <p className="text-gray-600 dark:text-gray-400">
-          Intelligence artificielle pour détecter automatiquement vos vêtements
+          Détection complète : vêtements, cheveux, lunettes, accessoires et plus
         </p>
       </div>
 
       {/* Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card">
           <div className="flex items-center gap-3">
             <div className={`p-2 rounded-lg ${modelLoaded ? 'bg-green-100 dark:bg-green-900' : 'bg-yellow-100 dark:bg-yellow-900'}`}>
@@ -196,9 +223,23 @@ const WebcamDetector = () => {
           <div className="flex items-center gap-3">
             {getStatusIcon()}
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Détection</p>
-              <p className={`font-semibold ${getClothingColor(currentClothing)}`}>
-                {currentClothing || 'Aucune détection'}
+              <p className="text-sm text-gray-600 dark:text-gray-400">Vêtement</p>
+              <p className={`font-semibold ${getClothingColor(currentDetection.clothing)}`}>
+                {currentDetection.clothing || 'Non détecté'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900">
+              <span className="text-purple-600 text-lg">👓</span>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Lunettes</p>
+              <p className="font-semibold text-gray-900 dark:text-white">
+                {currentDetection.glasses || 'Non détecté'}
               </p>
             </div>
           </div>
@@ -220,6 +261,57 @@ const WebcamDetector = () => {
           </div>
         </div>
       </div>
+
+      {/* Détails de l'analyse */}
+      {currentDetection.clothing && (
+        <div className="card">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Analyse complète détectée
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <h4 className="font-medium text-gray-700 dark:text-gray-300">👕 Apparence</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-medium">Vêtement:</span> {currentDetection.clothing}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-medium">Cheveux:</span> {currentDetection.hairColor} - {currentDetection.hairType}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-medium">Lunettes:</span> {currentDetection.glasses}
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="font-medium text-gray-700 dark:text-gray-300">🎭 Profil</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-medium">Âge estimé:</span> {currentDetection.age}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-medium">Genre:</span> {currentDetection.gender}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-medium">Pilosité:</span> {currentDetection.facialHair}
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="font-medium text-gray-700 dark:text-gray-300">💎 Accessoires</h4>
+              {currentDetection.accessories.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {currentDetection.accessories.map((accessory, index) => (
+                    <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                      {accessory}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600 dark:text-gray-400">Aucun accessoire détecté</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Webcam Container */}
       <div className="card">
@@ -253,18 +345,33 @@ const WebcamDetector = () => {
           )}
           
           {/* Overlay de détection */}
-          {isDetecting && currentClothing && (
+          {isDetecting && currentDetection.clothing && (
             <div className="webcam-overlay">
-              <div className="absolute top-4 left-4 glass p-3 rounded-lg">
-                <div className="flex items-center gap-2">
-                  {getStatusIcon()}
-                  <div>
-                    <p className={`font-semibold ${getClothingColor(currentClothing)}`}>
-                      {currentClothing}
-                    </p>
-                    <p className="text-sm text-white/80">
-                      {Math.round(currentConfidence * 100)}% de confiance
-                    </p>
+              <div className="absolute top-4 left-4 glass p-3 rounded-lg max-w-xs">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    {getStatusIcon()}
+                    <div>
+                      <p className={`font-semibold ${getClothingColor(currentDetection.clothing)}`}>
+                        {currentDetection.clothing}
+                      </p>
+                      <p className="text-sm text-white/80">
+                        {Math.round(currentConfidence * 100)}% de confiance
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Infos rapides */}
+                  <div className="text-xs text-white/70 space-y-1">
+                    {currentDetection.glasses && currentDetection.glasses !== 'Pas de lunettes' && (
+                      <p>👓 {currentDetection.glasses}</p>
+                    )}
+                    {currentDetection.hairColor && currentDetection.hairColor !== 'Non détecté' && (
+                      <p>💇 {currentDetection.hairColor}</p>
+                    )}
+                    {currentDetection.accessories.length > 0 && (
+                      <p>💎 {currentDetection.accessories.join(', ')}</p>
+                    )}
                   </div>
                 </div>
               </div>

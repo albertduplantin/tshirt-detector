@@ -111,7 +111,7 @@ const Dashboard = () => {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">T-Shirts</p>
               <p className="text-2xl font-bold text-green-600">
-                {stats.tshirtCount}
+                {stats.clothing.tshirtCount}
               </p>
             </div>
           </div>
@@ -125,7 +125,7 @@ const Dashboard = () => {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Autres Vêtements</p>
               <p className="text-2xl font-bold text-purple-600">
-                {stats.otherCount}
+                {stats.clothing.otherCount}
               </p>
             </div>
           </div>

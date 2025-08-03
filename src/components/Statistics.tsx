@@ -40,7 +40,7 @@ const Statistics = () => {
 
     // Pourcentage de t-shirts
     const tshirtPercentage = stats.totalDetections > 0 
-      ? (stats.tshirtCount / stats.totalDetections) * 100 
+      ? (stats.clothing.tshirtCount / stats.totalDetections) * 100 
       : 0
 
     // Détections aujourd'hui
