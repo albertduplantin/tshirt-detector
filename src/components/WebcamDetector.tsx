@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { Camera, Play, Pause, AlertCircle, CheckCircle } from 'lucide-react'
+import { Camera, Play, Pause, AlertCircle, CheckCircle, Sparkles, Trophy } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { loadModel, detectClothing } from '../utils/aiModel'
+import { judgeFashion, JudgeMode, FashionJudgment } from '../utils/fashionJudge'
 
 const WebcamDetector = () => {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -12,6 +13,9 @@ const WebcamDetector = () => {
   const [error, setError] = useState<string | null>(null)
   const [modelLoaded, setModelLoaded] = useState(false)
   const [currentConfidence, setCurrentConfidence] = useState<number>(0)
+  const [fashionJudgment, setFashionJudgment] = useState<FashionJudgment | null>(null)
+  const [judgeMode, setJudgeMode] = useState<JudgeMode>('free')
+  const [showJudgment, setShowJudgment] = useState(false)
   
   const {
     isDetecting,
@@ -191,6 +195,47 @@ const WebcamDetector = () => {
     return <AlertCircle className="text-blue-500" size={24} />
   }
 
+  // Fonction pour juger le look actuel
+  const judgeLook = useCallback(() => {
+    if (!currentDetection.clothing) {
+      setError('Aucune détection disponible pour l\'évaluation')
+      return
+    }
+
+    // Créer un objet DetectionResult à partir de currentDetection
+    const detectionForJudge = {
+      clothing: currentDetection.clothing,
+      glasses: currentDetection.glasses || 'Pas de lunettes',
+      hairType: currentDetection.hairType || 'Non visible',
+      hairColor: currentDetection.hairColor || 'Non détecté',
+      accessories: currentDetection.accessories || [],
+      facialHair: currentDetection.facialHair || 'Rasé',
+      age: currentDetection.age || 'Adulte',
+      gender: currentDetection.gender || 'Non déterminé',
+      confidence: currentConfidence,
+      details: {
+        clothingConfidence: currentConfidence,
+        glassesConfidence: 0.7,
+        hairConfidence: 0.7,
+        accessoriesConfidence: 0.7
+      }
+    }
+
+    const judgment = judgeFashion(detectionForJudge, judgeMode)
+    setFashionJudgment(judgment)
+    setShowJudgment(true)
+  }, [currentDetection, currentConfidence, judgeMode])
+
+  const getModeLabel = (mode: JudgeMode) => {
+    switch (mode) {
+      case 'trends2024': return '🔥 Tendances 2024'
+      case 'professional': return '👔 Look Pro'
+      case 'creative': return '🎨 Créativité'
+      case 'colors': return '🌈 Harmonie Couleurs'
+      case 'free': return '✨ Évaluation Libre'
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -310,6 +355,131 @@ const WebcamDetector = () => {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Fashion Judge Panel */}
+      {currentDetection.clothing && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <Trophy className="text-yellow-500" size={24} />
+              Fashion Judge IA
+            </h3>
+            <div className="flex items-center gap-2">
+              <select
+                value={judgeMode}
+                onChange={(e) => setJudgeMode(e.target.value as JudgeMode)}
+                className="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+              >
+                <option value="free">✨ Évaluation Libre</option>
+                <option value="trends2024">🔥 Tendances 2024</option>
+                <option value="professional">👔 Look Professionnel</option>
+                <option value="creative">🎨 Créativité</option>
+                <option value="colors">🌈 Harmonie Couleurs</option>
+              </select>
+              <button
+                onClick={judgeLook}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105"
+              >
+                <Sparkles size={16} />
+                Juger mon look !
+              </button>
+            </div>
+          </div>
+
+          <div className="text-center text-gray-600 dark:text-gray-400 mb-2">
+            <p className="text-sm">
+              Mode actuel : <span className="font-medium text-purple-600 dark:text-purple-400">{getModeLabel(judgeMode)}</span>
+            </p>
+          </div>
+
+          {/* Résultat du jugement */}
+          {showJudgment && fashionJudgment && (
+            <div className="mt-4 p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-700">
+              <div className="text-center mb-4">
+                <div className="text-6xl mb-2">{fashionJudgment.emoji}</div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                  {fashionJudgment.overallScore}/100
+                </div>
+                <div className="inline-block px-3 py-1 bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200 rounded-full text-sm font-medium">
+                  {fashionJudgment.category}
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4">
+                <p className="text-gray-900 dark:text-white font-medium text-center text-lg">
+                  {fashionJudgment.judgment}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                  <h4 className="font-semibold text-green-800 dark:text-green-400 mb-2 flex items-center gap-1">
+                    ✨ Points forts
+                  </h4>
+                  <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
+                    {fashionJudgment.compliments.map((compliment, index) => (
+                      <li key={index}>• {compliment}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-1">
+                    💡 Suggestions
+                  </h4>
+                  <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                    {fashionJudgment.suggestions.map((suggestion, index) => (
+                      <li key={index}>• {suggestion}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                    {fashionJudgment.trendScore.style}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Style</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-pink-600 dark:text-pink-400">
+                    {fashionJudgment.trendScore.colors}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Couleurs</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                    {fashionJudgment.trendScore.accessories}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Accessoires</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-yellow-600 dark:text-yellow-400">
+                    {fashionJudgment.trendScore.overall}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Global</div>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                <p className="text-sm text-yellow-800 dark:text-yellow-300 text-center">
+                  💡 <strong>Le saviez-vous ?</strong> {fashionJudgment.funFacts[0]}
+                </p>
+              </div>
+
+              <div className="mt-4 text-center">
+                <button
+                  onClick={() => setShowJudgment(false)}
+                  className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                >
+                  Fermer l'évaluation
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
