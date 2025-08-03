@@ -71,10 +71,9 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-# OpenCV files (not needed in repository)
-opencv/
-build/
-CMakeFiles/
-*.exe
-*.dll
-*.zip
+# TypeScript
+*.tsbuildinfo
+
+# Temporary files
+*.tmp
+*.temp
